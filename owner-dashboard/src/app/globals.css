@@ -1,0 +1,313 @@
+@import "tailwindcss";
+
+/* ─── CSS Custom Properties (Design Tokens) ─────────────────────────────────── */
+:root {
+  /* Primary Colors */
+  --color-navy-950: #0a0f1e;
+  --color-navy-900: #0f172a;
+  --color-navy-800: #1e2d4a;
+  --color-navy-700: #2a3f62;
+  --color-navy-600: #3a547d;
+
+  /* Teal (Secondary / Growth) */
+  --color-teal-700: #0f766e;
+  --color-teal-600: #0d9488;
+  --color-teal-500: #14b8a6;
+  --color-teal-400: #2dd4bf;
+  --color-teal-100: #ccfbf1;
+  --color-teal-50: #f0fdfa;
+
+  /* Amber (Warning / Churn) */
+  --color-amber-600: #d97706;
+  --color-amber-500: #f59e0b;
+  --color-amber-100: #fef3c7;
+  --color-amber-50: #fffbeb;
+
+  /* Rose (Error) */
+  --color-rose-600: #e11d48;
+  --color-rose-100: #ffe4e6;
+  --color-rose-50: #fff1f2;
+
+  /* Neutrals */
+  --color-slate-950: #020617;
+  --color-slate-900: #0f172a;
+  --color-slate-800: #1e293b;
+  --color-slate-700: #334155;
+  --color-slate-600: #475569;
+  --color-slate-500: #64748b;
+  --color-slate-400: #94a3b8;
+  --color-slate-300: #cbd5e1;
+  --color-slate-200: #e2e8f0;
+  --color-slate-100: #f1f5f9;
+  --color-slate-50: #f8fafc;
+
+  /* Surfaces */
+  --surface-bg: #f0edef;
+  --surface-card: #ffffff;
+  --surface-sidebar: #0f172a;
+
+  /* Semantic */
+  --border-default: var(--color-slate-200);
+  --border-strong: var(--color-slate-300);
+
+  /* Font */
+  --font-inter: 'Inter', sans-serif;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-inter);
+  background-color: var(--surface-bg);
+  color: var(--color-slate-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar Styling ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-slate-100);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-300);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-400);
+}
+
+/* ─── Typography Utilities ──────────────────────────────────────────────────── */
+.font-mono-data {
+  font-family: var(--font-inter);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Animation Keyframes ───────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── Utility Animation Classes ─────────────────────────────────────────────── */
+.animate-fade-in-up {
+  animation: fadeInUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-count-up {
+  animation: countUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ─── Stagger Delays ────────────────────────────────────────────────────────── */
+.delay-100 { animation-delay: 0.1s; }
+.delay-150 { animation-delay: 0.15s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* ─── Glassmorphism ─────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* ─── Card Styles ───────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  border-color: var(--color-slate-300);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
+}
+
+/* ─── Churn Score Bar ───────────────────────────────────────────────────────── */
+.churn-bar-fill {
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─── Sidebar ───────────────────────────────────────────────────────────────── */
+.sidebar-nav-item {
+  transition: background 0.15s ease, color 0.15s ease, padding-left 0.15s ease;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  padding-left: 20px;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(13, 148, 136, 0.2);
+  border-left: 3px solid var(--color-teal-400);
+  color: var(--color-teal-400);
+}
+
+/* ─── Status Badge ──────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-high  { background: #ffe4e6; color: #be123c; }
+.badge-med   { background: #fef3c7; color: #b45309; }
+.badge-low   { background: #dcfce7; color: #166534; }
+.badge-teal  { background: #ccfbf1; color: #0f766e; }
+.badge-navy  { background: #dae2fd; color: #1e2d4a; }
+
+.badge-paid     { background: #d1fae5; color: #065f46; }
+.badge-overdue  { background: #fef3c7; color: #92400e; }
+.badge-unpaid   { background: #ffe4e6; color: #991b1b; }
+
+/* ─── Heatmap Cell ──────────────────────────────────────────────────────────── */
+.heatmap-cell {
+  border-radius: 6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: default;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  z-index: 10;
+  position: relative;
+}
+
+/* ─── AI Button ─────────────────────────────────────────────────────────────── */
+.btn-ai {
+  background: linear-gradient(135deg, #0d9488, #0f766e);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}
+
+.btn-ai:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.45);
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+}
+
+.btn-ai:active {
+  transform: translateY(0);
+}
+
+/* ─── Trend Arrow ───────────────────────────────────────────────────────────── */
+.trend-up   { color: #0d9488; }
+.trend-down { color: #e11d48; }
+
+/* ─── Loading Skeleton ──────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-slate-100) 25%,
+    var(--color-slate-200) 50%,
+    var(--color-slate-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ─── Notification Dot ──────────────────────────────────────────────────────── */
+.notif-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-teal-500);
+  border-radius: 50%;
+  position: relative;
+}
+
+.notif-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid var(--color-teal-500);
+  animation: pulse-ring 1.5s ease infinite;
+}
+
+/* ─── Recharts Overrides ─────────────────────────────────────────────────────── */
+.recharts-tooltip-wrapper {
+  z-index: 50;
+}
+
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--color-slate-100);
+}
