@@ -14,11 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import { useState } from "react";
-import {
-  socialMediaPosts,
-  viberMessageLog,
-  socialStats,
-} from "@/lib/mockData";
+import { socialMediaPosts, viberMessageLog, socialStats } from "@/lib/mockData";
 
 const FacebookIcon = ({
   size = 24,
@@ -46,7 +42,12 @@ const platformConfig = {
     bg: "#e7f0ff",
     label: "Facebook",
   },
-  viber: { icon: MessageCircle, color: "#7360f2", bg: "#eeecfe", label: "Viber" },
+  viber: {
+    icon: MessageCircle,
+    color: "#7360f2",
+    bg: "#eeecfe",
+    label: "Viber",
+  },
 };
 
 const typeLabels: Record<string, { label: string; color: string }> = {
@@ -56,13 +57,19 @@ const typeLabels: Record<string, { label: string; color: string }> = {
   transformation: { label: "Story", color: "#d97706" },
 };
 
-const statusStyles: Record<string, { label: string; bg: string; color: string }> = {
+const statusStyles: Record<
+  string,
+  { label: string; bg: string; color: string }
+> = {
   draft: { label: "Draft", bg: "#f1f5f9", color: "#64748b" },
   scheduled: { label: "Scheduled", bg: "#f0fdfa", color: "#0d9488" },
   sent: { label: "Sent", bg: "#dae2fd", color: "#3a547d" },
 };
 
-const messageTypeLabels: Record<string, { label: string; icon: typeof Send; color: string }> = {
+const messageTypeLabels: Record<
+  string,
+  { label: string; icon: typeof Send; color: string }
+> = {
   payment_reminder: { label: "Payment Reminder", icon: Send, color: "#e11d48" },
   birthday: { label: "Birthday Wish", icon: Sparkles, color: "#d97706" },
   class_schedule: { label: "Class Schedule", icon: Calendar, color: "#0d9488" },
@@ -83,8 +90,8 @@ export default function SocialMediaHub() {
             Social Media Hub
           </h1>
           <p className="text-slate-500 text-sm mt-1">
-            AI content generation & automated Viber messaging ·
-            လူမှုမီဒီယာ စီမံခန့်ခွဲမှု
+            AI content generation & automated Viber messaging · လူမှုမီဒီယာ
+            စီမံခန့်ခွဲမှု
           </p>
         </div>
         <button
@@ -96,9 +103,7 @@ export default function SocialMediaHub() {
               ? "linear-gradient(135deg, #0d9488, #0f766e)"
               : "#f1f5f9",
             color: showBurmese ? "white" : "#64748b",
-            boxShadow: showBurmese
-              ? "0 4px 12px rgba(13,148,136,0.3)"
-              : "none",
+            boxShadow: showBurmese ? "0 4px 12px rgba(13,148,136,0.3)" : "none",
           }}
         >
           {showBurmese ? "🇲🇲 မြန်မာ" : "🇬🇧 English"}
@@ -405,7 +410,7 @@ export default function SocialMediaHub() {
               {Math.round(
                 (socialStats.autoRepliesHandled /
                   socialStats.totalMessagesSentThisMonth) *
-                  100
+                  100,
               )}
               % Automated
             </span>
