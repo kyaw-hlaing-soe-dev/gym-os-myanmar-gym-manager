@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { type FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   Bar,
   BarChart,
@@ -14,6 +14,7 @@ import {
 
 type Section =
   | "dashboard"
+  | "accounts"
   | "churn"
   | "revenue"
   | "payments"
@@ -33,6 +34,20 @@ type ChurnMember = {
   phone: string;
 };
 
+type AccountRole = "member" | "trainer";
+
+type GymAccount = {
+  id: string;
+  role: AccountRole;
+  name: string;
+  username: string;
+  password: string;
+  phone: string;
+  planOrSpecialty: string;
+  status: "Active" | "Pending";
+  createdAt: string;
+};
+
 const gymMeta = {
   name: "FitZone Yangon",
   nameMM: "ဖစ်ဇုန် ရန်ကုန်",
@@ -42,6 +57,7 @@ const gymMeta = {
 
 const navItems: Array<{ id: Section; label: string; icon: string; badge?: number }> = [
   { id: "dashboard", label: "Dashboard", icon: "▦" },
+  { id: "accounts", label: "Accounts", icon: "⊕" },
   { id: "churn", label: "Churn Risk", icon: "⚡", badge: 8 },
   { id: "revenue", label: "Revenue", icon: "▥" },
   { id: "payments", label: "Payments", icon: "₭" },
@@ -208,6 +224,31 @@ const payments = [
   { channel: "Bank Transfer", amount: "2.4M MMK", percent: 13 },
 ];
 
+const initialGymAccounts: GymAccount[] = [
+  {
+    id: "acc-1",
+    role: "member",
+    name: "Ni Ni Aung",
+    username: "nini.aung",
+    password: "FitZone8842",
+    phone: "+95 9 2109 8765",
+    planOrSpecialty: "Basic",
+    status: "Active",
+    createdAt: "Today, 8:30 AM",
+  },
+  {
+    id: "acc-2",
+    role: "trainer",
+    name: "Ko Naing",
+    username: "ko.naing",
+    password: "Trainer7391",
+    phone: "+95 9 7788 9911",
+    planOrSpecialty: "Strength Training",
+    status: "Active",
+    createdAt: "Yesterday, 5:10 PM",
+  },
+];
+
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
 
@@ -239,6 +280,41 @@ function formatHour(hour: number) {
   if (hour < 12) return `${hour}a`;
   if (hour === 12) return "12p";
   return `${hour - 12}p`;
+}
+
+function createInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function createUsername(name: string, role: AccountRole, accounts: GymAccount[]) {
+  const base =
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "") || role;
+
+  let username = base;
+  let suffix = 2;
+  const existing = new Set(accounts.map((account) => account.username.toLowerCase()));
+
+  while (existing.has(username.toLowerCase())) {
+    username = `${base}${suffix}`;
+    suffix += 1;
+  }
+
+  return username;
+}
+
+function createPassword(role: AccountRole) {
+  const prefix = role === "trainer" ? "Trainer" : "Member";
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}${digits}`;
 }
 
 function getOccupancy(dayIndex: number, hour: number) {
@@ -891,6 +967,306 @@ function OverviewCard() {
   );
 }
 
+function AccountCreationPanel({
+  accounts,
+  onCreateAccount,
+  defaultRole = "member",
+}: {
+  accounts: GymAccount[];
+  onCreateAccount: (account: GymAccount) => void;
+  defaultRole?: AccountRole;
+}) {
+  const [role, setRole] = useState<AccountRole>(defaultRole);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [planOrSpecialty, setPlanOrSpecialty] = useState(defaultRole === "trainer" ? "Strength Training" : "Basic");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState(createPassword(defaultRole));
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [createdName, setCreatedName] = useState("");
+
+  const memberAccounts = accounts.filter((account) => account.role === "member");
+  const trainerAccounts = accounts.filter((account) => account.role === "trainer");
+  const roleLabel = role === "trainer" ? "Trainer" : "Member";
+  const accountOptions =
+    role === "trainer"
+      ? ["Strength Training", "HIIT", "Yoga", "Zumba", "Boxing"]
+      : ["Basic", "Premium", "Premium Plus", "Student"];
+
+  function handleRoleChange(nextRole: AccountRole) {
+    setRole(nextRole);
+    setPlanOrSpecialty(nextRole === "trainer" ? "Strength Training" : "Basic");
+    setPassword(createPassword(nextRole));
+    setError("");
+  }
+
+  function handleNameChange(nextName: string) {
+    setName(nextName);
+    if (!username || username === createUsername(name, role, accounts)) {
+      setUsername(createUsername(nextName, role, accounts));
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const cleanName = name.trim();
+    const cleanUsername = username.trim();
+    const cleanPassword = password.trim();
+    const cleanPhone = phone.trim();
+
+    if (!cleanName) {
+      setError("Enter the account holder name.");
+      return;
+    }
+
+    if (cleanUsername.length < 4) {
+      setError("Username must be at least 4 characters.");
+      return;
+    }
+
+    if (accounts.some((account) => account.username.toLowerCase() === cleanUsername.toLowerCase())) {
+      setError("This username is already used. Choose another username.");
+      return;
+    }
+
+    if (cleanPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    const newAccount: GymAccount = {
+      id: `acc-${Date.now()}`,
+      role,
+      name: cleanName,
+      username: cleanUsername,
+      password: cleanPassword,
+      phone: cleanPhone || "No phone added",
+      planOrSpecialty,
+      status: "Active",
+      createdAt: "Just now",
+    };
+
+    onCreateAccount(newAccount);
+    setCreatedName(cleanName);
+    setName("");
+    setPhone("");
+    setUsername("");
+    setPassword(createPassword(role));
+    setError("");
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="font-semibold text-slate-950">Account Creation</h2>
+          <p className="text-xs text-slate-500">Create login credentials for gym members and trainers</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="rounded-xl bg-slate-50 px-3 py-2">
+            <p className="font-bold text-slate-950">{accounts.length}</p>
+            <p className="text-slate-500">Accounts</p>
+          </div>
+          <div className="rounded-xl bg-blue-50 px-3 py-2">
+            <p className="font-bold text-blue-700">{memberAccounts.length}</p>
+            <p className="text-blue-700">Members</p>
+          </div>
+          <div className="rounded-xl bg-emerald-50 px-3 py-2">
+            <p className="font-bold text-emerald-700">{trainerAccounts.length}</p>
+            <p className="text-emerald-700">Trainers</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <form className="space-y-4 rounded-2xl bg-slate-50 p-4" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-2 gap-2 rounded-xl bg-white p-1 text-sm font-semibold shadow-sm ring-1 ring-slate-200">
+            {(["member", "trainer"] as AccountRole[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleRoleChange(option)}
+                className={`rounded-lg px-3 py-2 transition ${
+                  role === option ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {option === "trainer" ? "Trainer" : "Member"}
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-600" htmlFor="account-name">
+              {roleLabel} name
+            </label>
+            <input
+              id="account-name"
+              value={name}
+              onChange={(event) => handleNameChange(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              placeholder={role === "trainer" ? "Ko Trainer Name" : "Member full name"}
+            />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-600" htmlFor="account-phone">
+                Phone
+              </label>
+              <input
+                id="account-phone"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                placeholder="+95 9..."
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600" htmlFor="account-plan">
+                {role === "trainer" ? "Specialty" : "Plan"}
+              </label>
+              <select
+                id="account-plan"
+                value={planOrSpecialty}
+                onChange={(event) => setPlanOrSpecialty(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+              >
+                {accountOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold text-slate-600" htmlFor="account-username">
+                Username
+              </label>
+              <input
+                id="account-username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                placeholder="username"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600" htmlFor="account-password">
+                Password
+              </label>
+              <div className="mt-1 flex rounded-xl border border-slate-200 bg-white focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                <input
+                  id="account-password"
+                  value={password}
+                  type={showPassword ? "text" : "password"}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="min-w-0 flex-1 rounded-l-xl bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none"
+                  placeholder="temporary password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="px-3 text-xs font-semibold text-blue-700 hover:text-blue-900"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {error ? <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</p> : null}
+          {createdName ? (
+            <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+              Account created for {createdName}.
+            </p>
+          ) : null}
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => setPassword(createPassword(role))}
+              className="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+            >
+              Generate Password
+            </button>
+            <button
+              type="submit"
+              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 hover:bg-blue-700 sm:flex-1"
+            >
+              Create {roleLabel} Account
+            </button>
+          </div>
+        </form>
+
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-950">Recent Accounts</h3>
+              <p className="text-xs text-slate-500">Username and temporary password handoff list</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {accounts.filter((account) => account.status === "Active").length} active
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {accounts.map((account) => (
+              <div key={account.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 gap-3">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                        account.role === "trainer" ? "bg-emerald-600" : "bg-blue-600"
+                      }`}
+                    >
+                      {createInitials(account.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-slate-800">{account.name}</p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${
+                            account.role === "trainer"
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                              : "bg-blue-50 text-blue-700 ring-blue-200"
+                          }`}
+                        >
+                          {account.role === "trainer" ? "Trainer" : "Member"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {account.planOrSpecialty} · {account.phone} · {account.createdAt}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    {account.status}
+                  </span>
+                </div>
+
+                <div className="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3 text-xs sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-400">Username</p>
+                    <p className="mt-1 truncate font-bold text-slate-800">{account.username}</p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-400">Temporary password</p>
+                    <p className="mt-1 truncate font-bold text-slate-800">{account.password}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function TrainersPanel() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -937,7 +1313,19 @@ function PaymentsPanel() {
   );
 }
 
-function DashboardContent({ section }: { section: Section }) {
+function DashboardContent({
+  section,
+  accounts,
+  onCreateAccount,
+}: {
+  section: Section;
+  accounts: GymAccount[];
+  onCreateAccount: (account: GymAccount) => void;
+}) {
+  if (section === "accounts") {
+    return <AccountCreationPanel key="accounts" accounts={accounts} onCreateAccount={onCreateAccount} />;
+  }
+
   if (section === "churn") {
     return (
       <>
@@ -958,11 +1346,29 @@ function DashboardContent({ section }: { section: Section }) {
   }
 
   if (section === "payments") return <PaymentsPanel />;
-  if (section === "trainers") return <TrainersPanel />;
+  if (section === "trainers") {
+    return (
+      <>
+        <AccountCreationPanel
+          key="trainer-accounts"
+          accounts={accounts}
+          onCreateAccount={onCreateAccount}
+          defaultRole="trainer"
+        />
+        <TrainersPanel />
+      </>
+    );
+  }
   if (section === "members") {
     return (
       <>
         <StatsCards />
+        <AccountCreationPanel
+          key="member-accounts"
+          accounts={accounts}
+          onCreateAccount={onCreateAccount}
+          defaultRole="member"
+        />
         <ChurnRiskPanel />
       </>
     );
@@ -980,6 +1386,7 @@ function DashboardContent({ section }: { section: Section }) {
     <>
       <OverviewCard />
       <StatsCards />
+      <AccountCreationPanel key="dashboard-accounts" accounts={accounts} onCreateAccount={onCreateAccount} />
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <RevenueChart />
@@ -998,6 +1405,7 @@ function DashboardContent({ section }: { section: Section }) {
 export default function ManagerDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accounts, setAccounts] = useState<GymAccount[]>(initialGymAccounts);
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -1010,7 +1418,11 @@ export default function ManagerDashboard() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar onMenuClick={() => setMobileOpen(true)} />
         <main className="flex-1 space-y-5 overflow-y-auto p-4 md:p-6">
-          <DashboardContent section={activeSection} />
+          <DashboardContent
+            section={activeSection}
+            accounts={accounts}
+            onCreateAccount={(account) => setAccounts((currentAccounts) => [account, ...currentAccounts])}
+          />
         </main>
         <footer className="flex flex-col gap-1 border-t border-slate-200 bg-white/80 px-4 py-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between md:px-6">
           <p>GymOS Myanmar · AI-Powered Platform · Claude API</p>
