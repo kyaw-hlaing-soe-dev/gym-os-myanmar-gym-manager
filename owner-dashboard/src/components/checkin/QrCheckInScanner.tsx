@@ -30,8 +30,15 @@ export default function QrCheckInScanner({
 }: Props) {
   const scannerRef = useRef<Html5QrCodeLike | null>(null);
   const resetTimerRef = useRef<number | null>(null);
+  const onScanRef = useRef(onScan);
+  const onUnavailableRef = useRef(onUnavailable);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onUnavailableRef.current = onUnavailable;
+  }, [onScan, onUnavailable]);
 
   useEffect(() => {
     let disposed = false;
@@ -50,7 +57,7 @@ export default function QrCheckInScanner({
           (decodedText) => {
             scanner.pause(true);
             setResult(decodedText);
-            onScan?.(decodedText);
+            onScanRef.current?.(decodedText);
             resetTimerRef.current = window.setTimeout(() => {
               setResult("");
               void scanner.stop().then(() => scanner.clear()).finally(() => {
@@ -64,7 +71,7 @@ export default function QrCheckInScanner({
       } catch {
         const message = "Camera scanner could not start. Use manual search.";
         setError(message);
-        onUnavailable?.(message);
+        onUnavailableRef.current?.(message);
       }
     }
 
@@ -83,7 +90,7 @@ export default function QrCheckInScanner({
         });
       }
     };
-  }, [containerId, onScan, onUnavailable]);
+  }, [containerId]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

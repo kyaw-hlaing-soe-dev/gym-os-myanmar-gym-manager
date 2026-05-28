@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { gymMeta } from "@/lib/mockData";
 import {
   Crown,
@@ -10,17 +9,6 @@ import {
   Users,
   DollarSign,
 } from "lucide-react";
-
-// Lazy-load chart heavy components
-const RevenueChartInner = dynamic(() => import("@/components/RevenueChart"), {
-  ssr: false,
-  loading: () => (
-    <div className="card p-6 animate-fade-in-up delay-300">
-      <div className="skeleton h-6 w-48 mb-4 rounded" />
-      <div className="skeleton h-60 rounded-xl" />
-    </div>
-  ),
-});
 
 function formatMMK(v: number) {
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M MMK`;

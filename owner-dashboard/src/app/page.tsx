@@ -1360,22 +1360,44 @@ function PaymentsPanel() {
 
 function DashboardContent({
   section,
+  accounts,
+  onCreateAccount,
   members,
   checkIns,
   onCheckIn,
+  expenses,
+  onAddExpense,
   paymentRecords,
 }: {
   section: Section;
+  accounts: GymAccount[];
+  onCreateAccount: (account: GymAccount) => void;
   members: Member[];
   checkIns: CheckIn[];
   onCheckIn: (c: CheckIn) => void;
+  expenses: Expense[];
+  onAddExpense: (e: Expense) => void;
   paymentRecords: PaymentRecord[];
 }) {
+  if (section === "accounts") {
+    return <AccountCreationPanel key="accounts" accounts={accounts} onCreateAccount={onCreateAccount} />;
+  }
+
   if (section === "churn") {
     return (
       <>
         <StatsCards />
         <ChurnRiskPanel />
+      </>
+    );
+  }
+
+  if (section === "revenue") {
+    return (
+      <>
+        <StatsCards />
+        <RevenueChart />
+        <ActivityFeed />
       </>
     );
   }
@@ -1389,6 +1411,20 @@ function DashboardContent({
     );
   }
 
+  if (section === "trainers") {
+    return (
+      <>
+        <AccountCreationPanel
+          key="trainer-accounts"
+          accounts={accounts}
+          onCreateAccount={onCreateAccount}
+          defaultRole="trainer"
+        />
+        <TrainersPanel />
+      </>
+    );
+  }
+
   if (section === "members") {
     return (
       <>
@@ -1397,6 +1433,30 @@ function DashboardContent({
         <ResponsiveMembersTable members={members} />
       </>
     );
+  }
+
+  if (section === "occupancy") {
+    return (
+      <>
+        <PeakGymHoursChart />
+        <OccupancyHeatmap />
+        <ActivityFeed />
+      </>
+    );
+  }
+
+  if (section === "checkin") {
+    return (
+      <>
+        <QuickCheckIn members={members} checkIns={checkIns} onCheckIn={onCheckIn} />
+        <QrCheckInScanner />
+        <OccupancyHeatmap />
+      </>
+    );
+  }
+
+  if (section === "expenses") {
+    return <ExpenseTracker expenses={expenses} onAddExpense={onAddExpense} />;
   }
 
   if (section === "reports") {
@@ -1419,11 +1479,15 @@ function loadOrSeed<T>(key: string, seed: T[]): T[] {
 export default function ManagerDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accounts, setAccounts] = useState<GymAccount[]>(initialGymAccounts);
 
   // ── New feature state ──────────────────────────────────────────────────────
   const [members] = useState<Member[]>(() => loadOrSeed("gymMembers", seedMembers));
   const [checkIns, setCheckIns] = useState<CheckIn[]>(() =>
     loadOrSeed("gymCheckIns", seedCheckIns),
+  );
+  const [expenses, setExpenses] = useState<Expense[]>(() =>
+    loadOrSeed("gymExpenses", seedExpenses),
   );
   const [paymentRecords] = useState<PaymentRecord[]>(() =>
     loadOrSeed("gymPayments", seedPaymentRecords),
@@ -1433,6 +1497,10 @@ export default function ManagerDashboard() {
   useEffect(() => {
     try { localStorage.setItem("gymCheckIns", JSON.stringify(checkIns)); } catch { /* noop */ }
   }, [checkIns]);
+
+  useEffect(() => {
+    try { localStorage.setItem("gymExpenses", JSON.stringify(expenses)); } catch { /* noop */ }
+  }, [expenses]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
   const { notifications, unreadCount, markAllRead } = useNotifications(members);
@@ -1462,9 +1530,15 @@ export default function ManagerDashboard() {
         >
           <DashboardContent
             section={activeSection}
+            accounts={accounts}
+            onCreateAccount={(account) =>
+              setAccounts((current) => [account, ...current])
+            }
             members={members}
             checkIns={checkIns}
             onCheckIn={(c) => setCheckIns((prev) => [...prev, c])}
+            expenses={expenses}
+            onAddExpense={(e) => setExpenses((prev) => [...prev, e])}
             paymentRecords={paymentRecords}
           />
         </main>

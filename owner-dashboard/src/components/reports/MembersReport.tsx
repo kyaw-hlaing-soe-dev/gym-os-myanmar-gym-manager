@@ -50,7 +50,6 @@ export default function MembersReport({ newMembers, payments, chartJsLoaded }: P
     });
 
     return () => { chartInstance.current?.destroy(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartJsLoaded, newCount, renewCount]);
 
   return (

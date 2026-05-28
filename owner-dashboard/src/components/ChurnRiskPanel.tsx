@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   MessageSquare,
@@ -58,10 +58,10 @@ function RetentionModal({
 
   const message = `မင်္ဂလာပါ ${member.nameMM}! FitZone Yangon မှ ကြည့်ရှုခြင်းဖြစ်ပါသည်။ မကြာသေးမီကာလ အတွင်း ကျွန်ုပ်တို့ gym မှ မတွေ့ရသဖြင့် မေးမြန်းလိုပါသည်။ ယခု special offer တစ်ခု ပေးရန် အဆင်သင့် ဖြစ်ပါသည် — နောက် 2 လ Premium Plan ကို 30% လျှော့ဈေးဖြင့် ရနိုင်ပါသည်။ ကျွန်ုပ်တို့နှင့် ပြန်လည်ပူးပေါင်းပါ! 💪`;
 
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setStep("done"), 2200);
     return () => clearTimeout(timer);
-  });
+  }, [member.id]);
 
   return (
     <div

@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
 import { revenueData } from "@/lib/mockData";
 import { TrendingUp } from "lucide-react";

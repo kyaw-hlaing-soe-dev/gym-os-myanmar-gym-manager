@@ -193,6 +193,10 @@ export default function TodayOps({ members, checkIns, paymentRecords, onCheckIn 
     requestCheckIn(matchedMember);
   }
 
+  function handleScannerUnavailable(message: string) {
+    setScannerNote(message);
+  }
+
   function confirmOverride() {
     if (!confirmState) return;
     completeCheckIn(confirmState.member, true);
@@ -243,7 +247,7 @@ export default function TodayOps({ members, checkIns, paymentRecords, onCheckIn 
               mode="embedded"
               containerId="today-ops-qr-reader"
               onScan={handleQrScan}
-              onUnavailable={(message) => setScannerNote(message)}
+              onUnavailable={handleScannerUnavailable}
             />
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
