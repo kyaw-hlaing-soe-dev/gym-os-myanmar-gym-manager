@@ -8,10 +8,6 @@ const nextConfig: NextConfig = {
     // Type errors are already checked separately; don't block the build.
     ignoreBuildErrors: false,
   },
-  eslint: {
-    // ESLint warnings don't block deploy.
-    ignoreDuringBuilds: true,
-  },
 };
 
 export default nextConfig;
