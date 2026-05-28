@@ -1,83 +1,96 @@
 "use client";
 
-import Image from "next/image";
-import { Search } from "lucide-react";
+import { CalendarClock, Phone, Search, UserCheck } from "lucide-react";
 import { useMemo, useState } from "react";
+import type { Member } from "@/lib/types";
 
-type DirectoryStatus = "Active" | "Overdue";
-
-type DirectoryMember = {
-  id: string;
-  name: string;
-  phone: string;
-  plan: string;
-  status: DirectoryStatus;
-  avatarBg: string;
+type Props = {
+  members: Member[];
 };
 
-const mockMembers: DirectoryMember[] = [
-  { id: "dm-1", name: "Zaw Myint", phone: "+95 9 7654 3210", plan: "Premium", status: "Overdue", avatarBg: "#e11d48" },
-  { id: "dm-2", name: "Thin Thin Aye", phone: "+95 9 8765 4321", plan: "Basic", status: "Overdue", avatarBg: "#f59e0b" },
-  { id: "dm-3", name: "Kyaw Zin Htun", phone: "+95 9 9876 5432", plan: "Premium", status: "Active", avatarBg: "#0d9488" },
-  { id: "dm-4", name: "Su Su Lwin", phone: "+95 9 6543 2109", plan: "Student", status: "Active", avatarBg: "#2563eb" },
-  { id: "dm-5", name: "Aung Ko Ko", phone: "+95 9 5432 1098", plan: "Premium Plus", status: "Active", avatarBg: "#7c3aed" },
-];
+type FilterStatus = "All" | "Active" | "Expired" | "Overdue";
 
-function avatarUrl(name: string, bg: string) {
-  const initials = name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="48" fill="${bg}"/><text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="28" font-weight="700" fill="white">${initials}</text></svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+function paymentTone(status: Member["paymentStatus"]) {
+  if (status === "Paid") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (status === "Overdue") return "bg-amber-50 text-amber-700 ring-amber-200";
+  return "bg-red-50 text-red-700 ring-red-200";
 }
 
-export default function MemberDirectory() {
+function statusTone(status: Member["status"]) {
+  if (status === "Active") return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+  if (status === "Expired") return "bg-red-50 text-red-700 ring-red-200";
+  return "bg-slate-100 text-slate-700 ring-slate-200";
+}
+
+function formatDate(date: string | null) {
+  if (!date) return "No visit";
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function nextAction(member: Member) {
+  if (member.status === "Expired") return "Renew before check-in";
+  if (member.paymentStatus === "Overdue" || member.paymentStatus === "Unpaid") return "Collect payment";
+  return "Ready to check in";
+}
+
+function matchesQuery(member: Member, value: string) {
+  const query = value.trim().toLowerCase();
+  if (!query) return true;
+
+  return (
+    member.id.toLowerCase().includes(query) ||
+    member.name.toLowerCase().includes(query) ||
+    member.nameMM.includes(value.trim()) ||
+    member.phone.toLowerCase().includes(query) ||
+    member.plan.toLowerCase().includes(query)
+  );
+}
+
+export default function MemberDirectory({ members }: Props) {
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"All" | DirectoryStatus>("All");
+  const [status, setStatus] = useState<FilterStatus>("All");
 
   const filteredMembers = useMemo(() => {
-    const cleanQuery = query.trim().toLowerCase();
+    return members.filter((member) => {
+      const matchesStatus =
+        status === "All" ||
+        member.status === status ||
+        (status === "Overdue" &&
+          (member.paymentStatus === "Overdue" || member.paymentStatus === "Unpaid"));
 
-    return mockMembers.filter((member) => {
-      const matchesQuery =
-        member.name.toLowerCase().includes(cleanQuery) ||
-        member.phone.toLowerCase().includes(cleanQuery) ||
-        member.plan.toLowerCase().includes(cleanQuery);
-      const matchesStatus = status === "All" || member.status === status;
-
-      return matchesQuery && matchesStatus;
+      return matchesStatus && matchesQuery(member, query);
     });
-  }, [query, status]);
+  }, [members, query, status]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="font-semibold text-slate-950">Member Directory</h2>
-          <p className="text-xs text-slate-500">Search and filter mock member records in real time</p>
+          <p className="text-xs text-slate-500">Real member list · အဖွဲ့ဝင်ရှာဖွေရန်</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="flex h-10 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3">
+          <label className="flex h-10 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
             <Search size={15} className="shrink-0 text-slate-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="min-w-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Search members..."
+              placeholder="Name, phone, ID..."
             />
           </label>
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value as "All" | DirectoryStatus)}
+            onChange={(event) => setStatus(event.target.value as FilterStatus)}
             className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             aria-label="Filter members by status"
           >
             <option>All</option>
             <option>Active</option>
+            <option>Expired</option>
             <option>Overdue</option>
           </select>
         </div>
@@ -87,33 +100,50 @@ export default function MemberDirectory() {
         {filteredMembers.map((member) => (
           <article key={member.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-start gap-3">
-              <Image
-                src={avatarUrl(member.name, member.avatarBg)}
-                alt=""
-                width={44}
-                height={44}
-                className="h-11 w-11 rounded-full"
-              />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                {member.initials}
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="truncate text-sm font-semibold text-slate-900">{member.name}</h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${
-                      member.status === "Active"
-                        ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                        : "bg-amber-50 text-amber-700 ring-amber-200"
-                    }`}
-                  >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold text-slate-900">{member.name}</h3>
+                    <p className="truncate text-xs text-slate-500">{member.nameMM}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${statusTone(member.status)}`}>
                     {member.status}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">{member.phone}</p>
-                <p className="mt-2 text-xs font-semibold text-slate-700">{member.plan}</p>
+                <div className="mt-3 grid gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <Phone size={12} />
+                    <span className="truncate">{member.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CalendarClock size={12} />
+                    <span>{member.plan} · Exp {formatDate(member.expiryDate)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <UserCheck size={12} />
+                    <span>Last visit {formatDate(member.lastVisitDate)}</span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${paymentTone(member.paymentStatus)}`}>
+                    {member.paymentStatus}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-700">{nextAction(member)}</span>
+                </div>
               </div>
             </div>
           </article>
         ))}
       </div>
+
+      {filteredMembers.length === 0 ? (
+        <div className="rounded-xl bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">
+          No members match this filter.
+        </div>
+      ) : null}
     </section>
   );
 }

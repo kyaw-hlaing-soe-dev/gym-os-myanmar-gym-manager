@@ -16,6 +16,17 @@ import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import MemberDirectory from "@/components/members/MemberDirectory";
 import POSCart from "@/components/pos/POSCart";
 import ResponsiveMembersTable from "@/components/tables/ResponsiveMembersTable";
+import TodayOps from "@/components/today/TodayOps";
+import {
+  AlertTriangle,
+  ClipboardList,
+  FileText,
+  LogOut,
+  Menu,
+  Users,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -73,21 +84,13 @@ const gymMeta = {
   owner: "Ko Aung",
 };
 
-const navItems: Array<{ id: Section; label: string; icon: string; badge?: number }> = [
-  { id: "dashboard", label: "Dashboard", icon: "▦" },
-  { id: "accounts", label: "Accounts", icon: "⊕" },
-  { id: "churn", label: "Churn Risk", icon: "⚡", badge: 8 },
-  { id: "revenue", label: "Revenue", icon: "▥" },
-  { id: "payments", label: "Payments", icon: "₭" },
-  { id: "trainers", label: "Trainers", icon: "◇" },
-  { id: "members", label: "Members", icon: "👥" },
-  { id: "occupancy", label: "Occupancy", icon: "▣" },
-  { id: "checkin", label: "Quick Check-In", icon: "✓" },
-  { id: "expenses", label: "Expenses", icon: "📊" },
-  { id: "reports", label: "Reports", icon: "📈" },
+const navItems: Array<{ id: Section; label: string; labelMM: string; icon: LucideIcon; badge?: number }> = [
+  { id: "dashboard", label: "Today Ops", labelMM: "နေ့စဉ်လုပ်ငန်း", icon: ClipboardList },
+  { id: "members", label: "Members", labelMM: "အဖွဲ့ဝင်များ", icon: Users },
+  { id: "payments", label: "Payments", labelMM: "ငွေကောက်ခံ", icon: Wallet },
+  { id: "churn", label: "Churn", labelMM: "ထွက်ခွာနိုင်ခြေ", icon: AlertTriangle, badge: 8 },
+  { id: "reports", label: "Reports", labelMM: "အစီရင်ခံစာ", icon: FileText },
 ];
-
-const comingSoonItems = ["Equipment", "Social Media", "Utilities", "System"];
 
 const statsCards = [
   {
@@ -440,6 +443,7 @@ function Sidebar({
         <nav className="flex-1 space-y-1 p-3">
           {navItems.map((item) => {
             const active = activeSection === item.id;
+            const Icon = item.icon;
             return (
               <button
                 key={item.id}
@@ -454,8 +458,11 @@ function Sidebar({
                 }`}
                 style={active ? { background: "#0f9b8e30" } : {}}
               >
-                <span className="flex h-5 w-5 items-center justify-center text-base">{item.icon}</span>
-                <span className="flex-1 text-left">{item.label}</span>
+                <Icon size={18} className="shrink-0" />
+                <span className="flex-1 text-left">
+                  <span className="block">{item.label}</span>
+                  <span className="block text-[10px] font-normal text-slate-500">{item.labelMM}</span>
+                </span>
                 {item.badge ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-200">
                     <span className="relative flex h-2 w-2">
@@ -471,23 +478,8 @@ function Sidebar({
         </nav>
 
         <div className="border-t border-white/10 p-3">
-          <div className="mb-3 flex items-center gap-2 px-2">
-            {comingSoonItems.map((item) => (
-              <div key={item} className="group relative">
-                <button
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs text-slate-500"
-                  aria-label={`${item} coming soon`}
-                >
-                  •
-                </button>
-                <div className="pointer-events-none absolute bottom-10 left-1/2 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-800 px-2 py-1 text-xs text-white shadow-lg group-hover:block">
-                  {item}: coming soon
-                </div>
-              </div>
-            ))}
-          </div>
           <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/10 hover:text-red-300">
-            <span>↩</span>
+            <LogOut size={17} />
             Sign Out
           </button>
         </div>
@@ -532,7 +524,7 @@ function TopBar({
         onClick={onMenuClick}
         aria-label="Open sidebar"
       >
-        ☰
+        <Menu size={20} />
       </button>
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-semibold text-slate-950">Manager Dashboard</h1>
@@ -1368,44 +1360,22 @@ function PaymentsPanel() {
 
 function DashboardContent({
   section,
-  accounts,
-  onCreateAccount,
   members,
   checkIns,
   onCheckIn,
-  expenses,
-  onAddExpense,
   paymentRecords,
 }: {
   section: Section;
-  accounts: GymAccount[];
-  onCreateAccount: (account: GymAccount) => void;
   members: Member[];
   checkIns: CheckIn[];
   onCheckIn: (c: CheckIn) => void;
-  expenses: Expense[];
-  onAddExpense: (e: Expense) => void;
   paymentRecords: PaymentRecord[];
 }) {
-  if (section === "accounts") {
-    return <AccountCreationPanel key="accounts" accounts={accounts} onCreateAccount={onCreateAccount} />;
-  }
-
   if (section === "churn") {
     return (
       <>
         <StatsCards />
         <ChurnRiskPanel />
-      </>
-    );
-  }
-
-  if (section === "revenue") {
-    return (
-      <>
-        <StatsCards />
-        <RevenueChart />
-        <ActivityFeed />
       </>
     );
   }
@@ -1419,83 +1389,21 @@ function DashboardContent({
     );
   }
 
-  if (section === "trainers") {
-    return (
-      <>
-        <AccountCreationPanel
-          key="trainer-accounts"
-          accounts={accounts}
-          onCreateAccount={onCreateAccount}
-          defaultRole="trainer"
-        />
-        <TrainersPanel />
-      </>
-    );
-  }
-
   if (section === "members") {
     return (
       <>
         <StatsCards />
-        <MemberDirectory />
+        <MemberDirectory members={members} />
         <ResponsiveMembersTable members={members} />
-        <AccountCreationPanel
-          key="member-accounts"
-          accounts={accounts}
-          onCreateAccount={onCreateAccount}
-          defaultRole="member"
-        />
-        <ChurnRiskPanel />
       </>
     );
-  }
-
-  if (section === "occupancy") {
-    return (
-      <>
-        <PeakGymHoursChart />
-        <OccupancyHeatmap />
-        <ActivityFeed />
-      </>
-    );
-  }
-
-  if (section === "checkin") {
-    return (
-      <>
-        <QuickCheckIn members={members} checkIns={checkIns} onCheckIn={onCheckIn} />
-        <QrCheckInScanner />
-        <OccupancyHeatmap />
-      </>
-    );
-  }
-
-  if (section === "expenses") {
-    return <ExpenseTracker expenses={expenses} onAddExpense={onAddExpense} />;
   }
 
   if (section === "reports") {
     return <ReportsSection members={members} paymentRecords={paymentRecords} />;
   }
 
-  return (
-    <>
-      <OverviewCard />
-      <StatsCards />
-      <AccountCreationPanel key="dashboard-accounts" accounts={accounts} onCreateAccount={onCreateAccount} />
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <RevenueChart />
-        </div>
-        <ChurnRiskPanel />
-      </div>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <TrainersPanel />
-        <OccupancyHeatmap />
-      </div>
-      <ActivityFeed />
-    </>
-  );
+  return <TodayOps members={members} checkIns={checkIns} paymentRecords={paymentRecords} onCheckIn={onCheckIn} />;
 }
 
 function loadOrSeed<T>(key: string, seed: T[]): T[] {
@@ -1511,15 +1419,11 @@ function loadOrSeed<T>(key: string, seed: T[]): T[] {
 export default function ManagerDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [accounts, setAccounts] = useState<GymAccount[]>(initialGymAccounts);
 
   // ── New feature state ──────────────────────────────────────────────────────
   const [members] = useState<Member[]>(() => loadOrSeed("gymMembers", seedMembers));
   const [checkIns, setCheckIns] = useState<CheckIn[]>(() =>
     loadOrSeed("gymCheckIns", seedCheckIns),
-  );
-  const [expenses, setExpenses] = useState<Expense[]>(() =>
-    loadOrSeed("gymExpenses", seedExpenses),
   );
   const [paymentRecords] = useState<PaymentRecord[]>(() =>
     loadOrSeed("gymPayments", seedPaymentRecords),
@@ -1529,10 +1433,6 @@ export default function ManagerDashboard() {
   useEffect(() => {
     try { localStorage.setItem("gymCheckIns", JSON.stringify(checkIns)); } catch { /* noop */ }
   }, [checkIns]);
-
-  useEffect(() => {
-    try { localStorage.setItem("gymExpenses", JSON.stringify(expenses)); } catch { /* noop */ }
-  }, [expenses]);
 
   // ── Notifications ──────────────────────────────────────────────────────────
   const { notifications, unreadCount, markAllRead } = useNotifications(members);
@@ -1562,15 +1462,9 @@ export default function ManagerDashboard() {
         >
           <DashboardContent
             section={activeSection}
-            accounts={accounts}
-            onCreateAccount={(account) =>
-              setAccounts((current) => [account, ...current])
-            }
             members={members}
             checkIns={checkIns}
             onCheckIn={(c) => setCheckIns((prev) => [...prev, c])}
-            expenses={expenses}
-            onAddExpense={(e) => setExpenses((prev) => [...prev, e])}
             paymentRecords={paymentRecords}
           />
         </main>

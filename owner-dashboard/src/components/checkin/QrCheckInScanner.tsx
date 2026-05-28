@@ -15,7 +15,19 @@ type Html5QrCodeLike = {
   clear: () => void;
 };
 
-export default function QrCheckInScanner() {
+type Props = {
+  containerId?: string;
+  mode?: "standalone" | "embedded";
+  onScan?: (decodedText: string) => void;
+  onUnavailable?: (message: string) => void;
+};
+
+export default function QrCheckInScanner({
+  containerId = "front-desk-qr-reader",
+  mode = "standalone",
+  onScan,
+  onUnavailable,
+}: Props) {
   const scannerRef = useRef<Html5QrCodeLike | null>(null);
   const resetTimerRef = useRef<number | null>(null);
   const [result, setResult] = useState("");
@@ -29,7 +41,7 @@ export default function QrCheckInScanner() {
         const { Html5Qrcode } = await import("html5-qrcode");
         if (disposed) return;
 
-        const scanner = new Html5Qrcode("front-desk-qr-reader") as Html5QrCodeLike;
+        const scanner = new Html5Qrcode(containerId) as Html5QrCodeLike;
         scannerRef.current = scanner;
 
         await scanner.start(
@@ -38,6 +50,7 @@ export default function QrCheckInScanner() {
           (decodedText) => {
             scanner.pause(true);
             setResult(decodedText);
+            onScan?.(decodedText);
             resetTimerRef.current = window.setTimeout(() => {
               setResult("");
               void scanner.stop().then(() => scanner.clear()).finally(() => {
@@ -49,7 +62,9 @@ export default function QrCheckInScanner() {
           () => undefined,
         );
       } catch {
-        setError("Camera scanner could not start. Check browser permissions.");
+        const message = "Camera scanner could not start. Use manual search.";
+        setError(message);
+        onUnavailable?.(message);
       }
     }
 
@@ -68,28 +83,44 @@ export default function QrCheckInScanner() {
         });
       }
     };
-  }, []);
+  }, [containerId, onScan, onUnavailable]);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center gap-2">
-        <QrCode size={18} className="text-blue-600" />
-        <div>
-          <h2 className="font-semibold text-slate-950">QR Check-In Scanner</h2>
-          <p className="text-xs text-slate-500">Uses the browser camera on the front desk device</p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <QrCode size={18} className="text-blue-600" />
+          <div>
+            <h2 className="font-semibold text-slate-950">QR Check-In Scanner</h2>
+            <p className="text-xs text-slate-500">Camera check-in · QR ဖြင့်ဝင်ရောက်မှု</p>
+          </div>
         </div>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${
+            error
+              ? "bg-amber-50 text-amber-700 ring-amber-200"
+              : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+          }`}
+        >
+          {error ? "Manual ready" : "Scanning"}
+        </span>
       </div>
 
       <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
-        <div id="front-desk-qr-reader" className="min-h-[320px] w-full" />
+        <div id={containerId} className="min-h-[320px] w-full" />
         {error ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/90 p-6 text-center text-sm font-semibold text-white">
-            {error}
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/90 p-6 text-center">
+            <div>
+              <p className="text-sm font-semibold text-white">{error}</p>
+              <p className="mt-2 text-xs text-slate-300">
+                Search by name, Myanmar name, phone, or ID.
+              </p>
+            </div>
           </div>
         ) : null}
       </div>
 
-      {result ? (
+      {mode === "standalone" && result ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
