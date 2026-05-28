@@ -1,7 +1,6 @@
 'use client';
 
-import Script from 'next/script';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Member, PaymentRecord } from '@/lib/types';
 import RevenueReport from './RevenueReport';
 import MembersReport from './MembersReport';
@@ -56,6 +55,25 @@ export default function ReportsSection({ members, paymentRecords }: Props) {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
 
+  // Load Chart.js imperatively (avoids next/script which breaks /_global-error prerender)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Chart) {
+      setChartJsLoaded(true);
+      return;
+    }
+    const existing = document.getElementById('chartjs-cdn');
+    if (existing) {
+      existing.addEventListener('load', () => setChartJsLoaded(true));
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'chartjs-cdn';
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';
+    script.async = true;
+    script.onload = () => setChartJsLoaded(true);
+    document.head.appendChild(script);
+  }, []);
+
   const [fromDate, toDate] = useMemo(
     () => computeRange(range, customFrom, customTo),
     [range, customFrom, customTo],
@@ -90,16 +108,7 @@ export default function ReportsSection({ members, paymentRecords }: Props) {
   }
 
   return (
-    <>
-      {/* Load Chart.js from CDN — lazyOnload so it doesn't block the page */}
-      <Script
-        id="chartjs-cdn"
-        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-        strategy="lazyOnload"
-        onLoad={() => setChartJsLoaded(true)}
-      />
-
-      <div className="space-y-5">
+    <div className="space-y-5">
         {/* ── Header card ───────────────────────────────────────────────── */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -231,7 +240,6 @@ export default function ReportsSection({ members, paymentRecords }: Props) {
           chartJsLoaded={chartJsLoaded}
         />
         <ChurnReport members={members} fromDate={fromDate} toDate={toDate} />
-      </div>
-    </>
+    </div>
   );
 }
