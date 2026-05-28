@@ -18,6 +18,10 @@ interface Props {
 const PLAN_COLORS = ['#0f9b8e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 const METHOD_COLORS = ['#0f9b8e', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b'];
 
+function Skeleton() {
+  return <div className="h-full animate-pulse rounded-xl bg-slate-100" />;
+}
+
 export default function RevenueReport({ payments, chartJsLoaded }: Props) {
   const planRef = useRef<HTMLCanvasElement>(null);
   const methodRef = useRef<HTMLCanvasElement>(null);
@@ -112,10 +116,6 @@ export default function RevenueReport({ payments, chartJsLoaded }: Props) {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chartJsLoaded, JSON.stringify(byPlan), JSON.stringify(byMethod)]);
-
-  const Skeleton = () => (
-    <div className="h-full animate-pulse rounded-xl bg-slate-100" />
-  );
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

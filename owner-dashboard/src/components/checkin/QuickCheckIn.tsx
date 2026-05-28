@@ -54,7 +54,7 @@ export default function QuickCheckIn({ members, checkIns, onCheckIn }: Props) {
   function doCheckIn(member: Member, isOverride = false) {
     const now = new Date().toISOString();
     const checkIn: CheckIn = {
-      id: `ci-${Date.now()}`,
+      id: `ci-${member.id}-${now.replace(/\D/g, '')}`,
       memberId: member.id,
       memberName: member.name,
       memberNameMM: member.nameMM,
@@ -192,7 +192,7 @@ export default function QuickCheckIn({ members, checkIns, onCheckIn }: Props) {
         {todayCheckIns.length > 0 && (
           <div className="mt-5 border-t border-slate-100 pt-4">
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-              Today's log
+              Today&apos;s log
             </p>
             <div className="max-h-44 space-y-1.5 overflow-y-auto">
               {[...todayCheckIns].reverse().map((ci) => (

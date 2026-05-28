@@ -58,7 +58,7 @@ export default function ReportsSection({ members, paymentRecords }: Props) {
   // Load Chart.js imperatively (avoids next/script which breaks /_global-error prerender)
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Chart) {
-      setChartJsLoaded(true);
+      window.setTimeout(() => setChartJsLoaded(true), 0);
       return;
     }
     const existing = document.getElementById('chartjs-cdn');

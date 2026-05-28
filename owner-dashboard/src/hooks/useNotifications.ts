@@ -90,7 +90,11 @@ export function useNotifications(members: Member[]) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('gymNotifRead');
-      if (stored) setReadIds(new Set(JSON.parse(stored) as string[]));
+      if (stored) {
+        window.setTimeout(() => {
+          setReadIds(new Set(JSON.parse(stored) as string[]));
+        }, 0);
+      }
     } catch {
       // ignore
     }
