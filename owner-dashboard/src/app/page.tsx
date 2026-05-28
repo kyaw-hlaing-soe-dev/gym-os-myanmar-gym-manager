@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { Member, Expense, CheckIn, PaymentRecord } from "@/lib/types";
+import type { AccountRole, GymAccount, Member, Expense, CheckIn, PaymentRecord } from "@/lib/types";
 import { seedMembers, seedExpenses, seedPaymentRecords, seedCheckIns } from "@/lib/data";
 import { useNotifications } from "@/hooks/useNotifications";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -9,20 +9,30 @@ import QuickCheckIn from "@/components/checkin/QuickCheckIn";
 import ExpenseTracker from "@/components/expenses/ExpenseTracker";
 import ReportsSection from "@/components/reports/ReportsSection";
 import SendInviteButton from "@/components/accounts/SendInviteButton";
+import MemberAppAccounts from "@/components/accounts/MemberAppAccounts";
+import FeaturesShowcase from "@/components/features/FeaturesShowcase";
 import PeakGymHoursChart from "@/components/analytics/PeakGymHoursChart";
 import QrCheckInScanner from "@/components/checkin/QrCheckInScanner";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import MemberDirectory from "@/components/members/MemberDirectory";
+import MemberManagement from "@/components/members/MemberManagement";
 import POSCart from "@/components/pos/POSCart";
+import RevenueOverview from "@/components/revenue/RevenueOverview";
 import ResponsiveMembersTable from "@/components/tables/ResponsiveMembersTable";
 import TodayOps from "@/components/today/TodayOps";
+import TrainerManagement from "@/components/trainers/TrainerManagement";
 import {
   AlertTriangle,
   ClipboardList,
+  Dumbbell,
   FileText,
   LogOut,
   Menu,
+  Receipt,
+  Smartphone,
+  Sparkles,
+  TrendingUp,
   Users,
   Wallet,
   type LucideIcon,
@@ -42,6 +52,7 @@ type Section =
   | "dashboard"
   | "accounts"
   | "churn"
+  | "features"
   | "revenue"
   | "payments"
   | "trainers"
@@ -63,20 +74,6 @@ type ChurnMember = {
   phone: string;
 };
 
-type AccountRole = "member" | "trainer";
-
-type GymAccount = {
-  id: string;
-  role: AccountRole;
-  name: string;
-  username: string;
-  password: string;
-  phone: string;
-  planOrSpecialty: string;
-  status: "Active" | "Pending";
-  createdAt: string;
-};
-
 const gymMeta = {
   name: "FitZone Yangon",
   nameMM: "ဖစ်ဇုန် ရန်ကုန်",
@@ -86,10 +83,15 @@ const gymMeta = {
 
 const navItems: Array<{ id: Section; label: string; labelMM: string; icon: LucideIcon; badge?: number }> = [
   { id: "dashboard", label: "Today Ops", labelMM: "နေ့စဉ်လုပ်ငန်း", icon: ClipboardList },
-  { id: "members", label: "Members", labelMM: "အဖွဲ့ဝင်များ", icon: Users },
+  { id: "members", label: "Member Management", labelMM: "အဖွဲ့ဝင်စီမံ", icon: Users },
+  { id: "trainers", label: "Trainers", labelMM: "နည်းပြများ", icon: Dumbbell },
+  { id: "accounts", label: "App Accounts", labelMM: "အက်ပ်အကောင့်", icon: Smartphone },
   { id: "payments", label: "Payments", labelMM: "ငွေကောက်ခံ", icon: Wallet },
+  { id: "revenue", label: "Revenue", labelMM: "ဝင်ငွေ", icon: TrendingUp },
+  { id: "expenses", label: "Expenses", labelMM: "ကုန်ကျစရိတ်", icon: Receipt },
   { id: "churn", label: "Churn", labelMM: "ထွက်ခွာနိုင်ခြေ", icon: AlertTriangle, badge: 8 },
   { id: "reports", label: "Reports", labelMM: "အစီရင်ခံစာ", icon: FileText },
+  { id: "features", label: "Features", labelMM: "လုပ်ဆောင်ချက်", icon: Sparkles },
 ];
 
 const statsCards = [
@@ -404,43 +406,43 @@ function Sidebar({
         onClick={onMobileClose}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col text-white shadow-2xl transition-transform duration-300 md:static md:z-auto md:w-64 md:translate-x-0 md:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col text-white shadow-2xl transition-all duration-300 md:static md:z-auto md:w-20 md:translate-x-0 md:shadow-none xl:w-64 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ background: "#1a1a2e" }}
       >
-        <div className="border-b border-white/10 p-5">
+        <div className="border-b border-white/10 p-4 xl:p-5">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold shadow-lg"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold shadow-lg"
               style={{ background: "#0f9b8e", boxShadow: "0 4px 14px #0f9b8e55" }}
             >
               G
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 md:hidden xl:block">
               <p className="truncate text-sm font-semibold">GymOS Myanmar</p>
               <p className="truncate text-xs text-slate-400">{gymMeta.branch}</p>
             </div>
           </div>
-          <div className="mt-4 rounded-xl bg-white/5 px-3 py-2">
+          <div className="mt-4 rounded-xl bg-white/5 px-3 py-2 md:hidden xl:block">
             <p className="truncate text-xs text-slate-300">{gymMeta.name}</p>
             <p className="mt-1 text-xs font-medium text-emerald-300">● Pro Plan Active</p>
           </div>
         </div>
 
-        <div className="border-b border-white/10 px-5 py-4">
+        <div className="border-b border-white/10 px-4 py-3 xl:px-5 xl:py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-700 text-xs font-bold">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-700 text-xs font-bold">
               KA
             </div>
-            <div>
+            <div className="md:hidden xl:block">
               <p className="text-sm font-semibold">{gymMeta.owner}</p>
               <p className="text-xs text-slate-400">Gym Manager</p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-2 xl:p-3">
           {navItems.map((item) => {
             const active = activeSection === item.id;
             const Icon = item.icon;
@@ -451,20 +453,21 @@ function Sidebar({
                   onNavigate(item.id);
                   onMobileClose();
                 }}
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex w-full items-center justify-start gap-3 rounded-xl px-3 py-2 text-sm font-medium transition md:justify-center xl:justify-start xl:py-2.5 ${
                   active
                     ? "text-white ring-1 ring-white/20"
                     : "text-slate-400 hover:bg-white/10 hover:text-white"
                 }`}
                 style={active ? { background: "#0f9b8e30" } : {}}
+                title={item.label}
               >
                 <Icon size={18} className="shrink-0" />
-                <span className="flex-1 text-left">
+                <span className="flex-1 text-left md:hidden xl:block">
                   <span className="block">{item.label}</span>
                   <span className="block text-[10px] font-normal text-slate-500">{item.labelMM}</span>
                 </span>
                 {item.badge ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-200">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-200 md:hidden xl:inline-flex">
                     <span className="relative flex h-2 w-2">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -478,9 +481,9 @@ function Sidebar({
         </nav>
 
         <div className="border-t border-white/10 p-3">
-          <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/10 hover:text-red-300">
-            <LogOut size={17} />
-            Sign Out
+          <button className="flex w-full items-center justify-start gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/10 hover:text-red-300 md:justify-center xl:justify-start">
+            <LogOut size={17} className="shrink-0" />
+            <span className="md:hidden xl:inline">Sign Out</span>
           </button>
         </div>
       </aside>
@@ -1363,6 +1366,8 @@ function DashboardContent({
   accounts,
   onCreateAccount,
   members,
+  onAddMember,
+  onUpdateMember,
   checkIns,
   onCheckIn,
   expenses,
@@ -1373,6 +1378,8 @@ function DashboardContent({
   accounts: GymAccount[];
   onCreateAccount: (account: GymAccount) => void;
   members: Member[];
+  onAddMember: (member: Member) => void;
+  onUpdateMember: (member: Member) => void;
   checkIns: CheckIn[];
   onCheckIn: (c: CheckIn) => void;
   expenses: Expense[];
@@ -1380,7 +1387,7 @@ function DashboardContent({
   paymentRecords: PaymentRecord[];
 }) {
   if (section === "accounts") {
-    return <AccountCreationPanel key="accounts" accounts={accounts} onCreateAccount={onCreateAccount} />;
+    return <MemberAppAccounts accounts={accounts} onCreateAccount={onCreateAccount} />;
   }
 
   if (section === "churn") {
@@ -1393,13 +1400,7 @@ function DashboardContent({
   }
 
   if (section === "revenue") {
-    return (
-      <>
-        <StatsCards />
-        <RevenueChart />
-        <ActivityFeed />
-      </>
-    );
+    return <RevenueOverview members={members} paymentRecords={paymentRecords} />;
   }
 
   if (section === "payments") {
@@ -1412,27 +1413,11 @@ function DashboardContent({
   }
 
   if (section === "trainers") {
-    return (
-      <>
-        <AccountCreationPanel
-          key="trainer-accounts"
-          accounts={accounts}
-          onCreateAccount={onCreateAccount}
-          defaultRole="trainer"
-        />
-        <TrainersPanel />
-      </>
-    );
+    return <TrainerManagement members={members} />;
   }
 
   if (section === "members") {
-    return (
-      <>
-        <StatsCards />
-        <MemberDirectory members={members} />
-        <ResponsiveMembersTable members={members} />
-      </>
-    );
+    return <MemberManagement members={members} onAddMember={onAddMember} onUpdateMember={onUpdateMember} />;
   }
 
   if (section === "occupancy") {
@@ -1463,6 +1448,10 @@ function DashboardContent({
     return <ReportsSection members={members} paymentRecords={paymentRecords} />;
   }
 
+  if (section === "features") {
+    return <FeaturesShowcase />;
+  }
+
   return <TodayOps members={members} checkIns={checkIns} paymentRecords={paymentRecords} onCheckIn={onCheckIn} />;
 }
 
@@ -1479,10 +1468,12 @@ function loadOrSeed<T>(key: string, seed: T[]): T[] {
 export default function ManagerDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [accounts, setAccounts] = useState<GymAccount[]>(initialGymAccounts);
+  const [accounts, setAccounts] = useState<GymAccount[]>(() =>
+    loadOrSeed("gymAccounts", initialGymAccounts),
+  );
 
   // ── New feature state ──────────────────────────────────────────────────────
-  const [members] = useState<Member[]>(() => loadOrSeed("gymMembers", seedMembers));
+  const [members, setMembers] = useState<Member[]>(() => loadOrSeed("gymMembers", seedMembers));
   const [checkIns, setCheckIns] = useState<CheckIn[]>(() =>
     loadOrSeed("gymCheckIns", seedCheckIns),
   );
@@ -1493,7 +1484,15 @@ export default function ManagerDashboard() {
     loadOrSeed("gymPayments", seedPaymentRecords),
   );
 
-  // Persist check-ins and expenses to localStorage on change
+  // Persist local dashboard state
+  useEffect(() => {
+    try { localStorage.setItem("gymAccounts", JSON.stringify(accounts)); } catch { /* noop */ }
+  }, [accounts]);
+
+  useEffect(() => {
+    try { localStorage.setItem("gymMembers", JSON.stringify(members)); } catch { /* noop */ }
+  }, [members]);
+
   useEffect(() => {
     try { localStorage.setItem("gymCheckIns", JSON.stringify(checkIns)); } catch { /* noop */ }
   }, [checkIns]);
@@ -1535,6 +1534,12 @@ export default function ManagerDashboard() {
               setAccounts((current) => [account, ...current])
             }
             members={members}
+            onAddMember={(member) => setMembers((current) => [member, ...current])}
+            onUpdateMember={(member) =>
+              setMembers((current) =>
+                current.map((existing) => (existing.id === member.id ? member : existing)),
+              )
+            }
             checkIns={checkIns}
             onCheckIn={(c) => setCheckIns((prev) => [...prev, c])}
             expenses={expenses}
