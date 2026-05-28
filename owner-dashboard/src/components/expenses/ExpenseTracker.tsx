@@ -210,7 +210,7 @@ export default function ExpenseTracker({ expenses, onAddExpense }: Props) {
                 tickFormatter={(v) => `${v}M`}
               />
               <Tooltip
-                formatter={(v: string | number) => [`${v}M MMK`, '']}
+                formatter={(v) => [`${v}M MMK`, '']}
                 contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }}
               />
               <Legend />

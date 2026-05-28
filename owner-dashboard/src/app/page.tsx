@@ -1,6 +1,13 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import type { Member, Expense, CheckIn, PaymentRecord } from "@/lib/types";
+import { seedMembers, seedExpenses, seedPaymentRecords, seedCheckIns } from "@/lib/data";
+import { useNotifications } from "@/hooks/useNotifications";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import QuickCheckIn from "@/components/checkin/QuickCheckIn";
+import ExpenseTracker from "@/components/expenses/ExpenseTracker";
+import ReportsSection from "@/components/reports/ReportsSection";
 import {
   Bar,
   BarChart,
@@ -20,7 +27,10 @@ type Section =
   | "payments"
   | "trainers"
   | "members"
-  | "occupancy";
+  | "occupancy"
+  | "checkin"
+  | "expenses"
+  | "reports";
 
 type ChurnMember = {
   id: string;
@@ -64,6 +74,9 @@ const navItems: Array<{ id: Section; label: string; icon: string; badge?: number
   { id: "trainers", label: "Trainers", icon: "◇" },
   { id: "members", label: "Members", icon: "👥" },
   { id: "occupancy", label: "Occupancy", icon: "▣" },
+  { id: "checkin", label: "Quick Check-In", icon: "✓" },
+  { id: "expenses", label: "Expenses", icon: "📊" },
+  { id: "reports", label: "Reports", icon: "📈" },
 ];
 
 const comingSoonItems = ["Equipment", "Social Media", "Utilities", "System"];
@@ -380,13 +393,17 @@ function Sidebar({
         onClick={onMobileClose}
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-950 text-white shadow-2xl transition-transform duration-300 md:static md:z-auto md:w-64 md:translate-x-0 md:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col text-white shadow-2xl transition-transform duration-300 md:static md:z-auto md:w-64 md:translate-x-0 md:shadow-none ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
+        style={{ background: "#1a1a2e" }}
       >
         <div className="border-b border-white/10 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold shadow-lg shadow-blue-900/40">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold shadow-lg"
+              style={{ background: "#0f9b8e", boxShadow: "0 4px 14px #0f9b8e55" }}
+            >
               G
             </div>
             <div className="min-w-0">
@@ -424,9 +441,10 @@ function Sidebar({
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   active
-                    ? "bg-blue-500/15 text-blue-200 ring-1 ring-blue-400/30"
+                    ? "text-white ring-1 ring-white/20"
                     : "text-slate-400 hover:bg-white/10 hover:text-white"
                 }`}
+                style={active ? { background: "#0f9b8e30" } : {}}
               >
                 <span className="flex h-5 w-5 items-center justify-center text-base">{item.icon}</span>
                 <span className="flex-1 text-left">{item.label}</span>
@@ -470,7 +488,17 @@ function Sidebar({
   );
 }
 
-function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
+function TopBar({
+  onMenuClick,
+  notifications,
+  unreadCount,
+  onMarkAllRead,
+}: {
+  onMenuClick: () => void;
+  notifications: import("@/lib/types").GymNotification[];
+  unreadCount: number;
+  onMarkAllRead: () => void;
+}) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -507,8 +535,17 @@ function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="hidden rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 sm:block">
         Last updated: <span className="font-semibold text-emerald-600">just now</span> · {time}
       </div>
+      {/* Notification Bell */}
+      <NotificationBell
+        notifications={notifications}
+        unreadCount={unreadCount}
+        onMarkAllRead={onMarkAllRead}
+      />
       <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-2 py-1.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+          style={{ background: "#0f9b8e" }}
+        >
           KA
         </div>
         <div className="hidden text-left sm:block">
@@ -1317,10 +1354,22 @@ function DashboardContent({
   section,
   accounts,
   onCreateAccount,
+  members,
+  checkIns,
+  onCheckIn,
+  expenses,
+  onAddExpense,
+  paymentRecords,
 }: {
   section: Section;
   accounts: GymAccount[];
   onCreateAccount: (account: GymAccount) => void;
+  members: Member[];
+  checkIns: CheckIn[];
+  onCheckIn: (c: CheckIn) => void;
+  expenses: Expense[];
+  onAddExpense: (e: Expense) => void;
+  paymentRecords: PaymentRecord[];
 }) {
   if (section === "accounts") {
     return <AccountCreationPanel key="accounts" accounts={accounts} onCreateAccount={onCreateAccount} />;
@@ -1346,6 +1395,7 @@ function DashboardContent({
   }
 
   if (section === "payments") return <PaymentsPanel />;
+
   if (section === "trainers") {
     return (
       <>
@@ -1359,6 +1409,7 @@ function DashboardContent({
       </>
     );
   }
+
   if (section === "members") {
     return (
       <>
@@ -1373,6 +1424,7 @@ function DashboardContent({
       </>
     );
   }
+
   if (section === "occupancy") {
     return (
       <>
@@ -1380,6 +1432,23 @@ function DashboardContent({
         <ActivityFeed />
       </>
     );
+  }
+
+  if (section === "checkin") {
+    return (
+      <>
+        <QuickCheckIn members={members} checkIns={checkIns} onCheckIn={onCheckIn} />
+        <OccupancyHeatmap />
+      </>
+    );
+  }
+
+  if (section === "expenses") {
+    return <ExpenseTracker expenses={expenses} onAddExpense={onAddExpense} />;
+  }
+
+  if (section === "reports") {
+    return <ReportsSection members={members} paymentRecords={paymentRecords} />;
   }
 
   return (
@@ -1402,10 +1471,47 @@ function DashboardContent({
   );
 }
 
+function loadOrSeed<T>(key: string, seed: T[]): T[] {
+  if (typeof window === "undefined") return seed;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? (JSON.parse(stored) as T[]) : seed;
+  } catch {
+    return seed;
+  }
+}
+
 export default function ManagerDashboard() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accounts, setAccounts] = useState<GymAccount[]>(initialGymAccounts);
+
+  // ── New feature state ──────────────────────────────────────────────────────
+  const [members] = useState<Member[]>(() => loadOrSeed("gymMembers", seedMembers));
+  const [checkIns, setCheckIns] = useState<CheckIn[]>(() =>
+    loadOrSeed("gymCheckIns", seedCheckIns),
+  );
+  const [expenses, setExpenses] = useState<Expense[]>(() =>
+    loadOrSeed("gymExpenses", seedExpenses),
+  );
+  const [paymentRecords] = useState<PaymentRecord[]>(() =>
+    loadOrSeed("gymPayments", seedPaymentRecords),
+  );
+
+  // Persist check-ins and expenses to localStorage on change
+  useEffect(() => {
+    try { localStorage.setItem("gymCheckIns", JSON.stringify(checkIns)); } catch { /* noop */ }
+  }, [checkIns]);
+
+  useEffect(() => {
+    try { localStorage.setItem("gymExpenses", JSON.stringify(expenses)); } catch { /* noop */ }
+  }, [expenses]);
+
+  // ── Notifications ──────────────────────────────────────────────────────────
+  const { notifications, unreadCount, markAllRead } = useNotifications(members);
+
+  // ── Section fade transition key ───────────────────────────────────────────
+  const sectionKey = activeSection;
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -1416,12 +1522,29 @@ export default function ManagerDashboard() {
         onMobileClose={() => setMobileOpen(false)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 space-y-5 overflow-y-auto p-4 md:p-6">
+        <TopBar
+          onMenuClick={() => setMobileOpen(true)}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAllRead={markAllRead}
+        />
+        <main
+          key={sectionKey}
+          className="flex-1 space-y-5 overflow-y-auto p-4 md:p-6"
+          style={{ animation: "sectionFade 0.22s ease" }}
+        >
           <DashboardContent
             section={activeSection}
             accounts={accounts}
-            onCreateAccount={(account) => setAccounts((currentAccounts) => [account, ...currentAccounts])}
+            onCreateAccount={(account) =>
+              setAccounts((current) => [account, ...current])
+            }
+            members={members}
+            checkIns={checkIns}
+            onCheckIn={(c) => setCheckIns((prev) => [...prev, c])}
+            expenses={expenses}
+            onAddExpense={(e) => setExpenses((prev) => [...prev, e])}
+            paymentRecords={paymentRecords}
           />
         </main>
         <footer className="flex flex-col gap-1 border-t border-slate-200 bg-white/80 px-4 py-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between md:px-6">
