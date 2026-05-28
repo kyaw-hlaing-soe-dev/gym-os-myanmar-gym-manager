@@ -12,6 +12,9 @@ export type ExpenseCategory =
   | 'Maintenance'
   | 'Other';
 export type NotificationType = 'expiring' | 'overdue' | 'churn';
+export type AccountRole = 'member' | 'trainer';
+export type AccountStatus = 'Active' | 'Pending';
+export type TrainerStatus = 'Active' | 'On Leave' | 'Inactive';
 
 export interface Member {
   id: string;
@@ -73,4 +76,30 @@ export interface GymNotification {
   /** ISO datetime */
   timestamp: string;
   read: boolean;
+}
+
+export interface GymAccount {
+  id: string;
+  role: AccountRole;
+  name: string;
+  username: string;
+  password: string;
+  phone: string;
+  planOrSpecialty: string;
+  status: AccountStatus;
+  createdAt: string;
+}
+
+export interface TrainerProfile {
+  id: string;
+  name: string;
+  phone: string;
+  specialty: string;
+  certifications: string[];
+  monthlySalary: number;
+  status: TrainerStatus;
+  schedule: string;
+  sessionsCompleted: number;
+  retentionRate: number;
+  revenueGenerated: number;
 }

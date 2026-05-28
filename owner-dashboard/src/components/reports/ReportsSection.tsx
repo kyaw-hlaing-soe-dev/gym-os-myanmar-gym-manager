@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Member, PaymentRecord } from '@/lib/types';
 import RevenueReport from './RevenueReport';
 import MembersReport from './MembersReport';
@@ -50,29 +50,9 @@ const RANGE_OPTIONS: { id: RangeId; label: string }[] = [
 ];
 
 export default function ReportsSection({ members, paymentRecords }: Props) {
-  const [chartJsLoaded, setChartJsLoaded] = useState(false);
   const [range, setRange] = useState<RangeId>('this-month');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
-
-  // Load Chart.js imperatively (avoids next/script which breaks /_global-error prerender)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Chart) {
-      window.setTimeout(() => setChartJsLoaded(true), 0);
-      return;
-    }
-    const existing = document.getElementById('chartjs-cdn');
-    if (existing) {
-      existing.addEventListener('load', () => setChartJsLoaded(true));
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'chartjs-cdn';
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js';
-    script.async = true;
-    script.onload = () => setChartJsLoaded(true);
-    document.head.appendChild(script);
-  }, []);
 
   const [fromDate, toDate] = useMemo(
     () => computeRange(range, customFrom, customTo),
@@ -233,12 +213,8 @@ export default function ReportsSection({ members, paymentRecords }: Props) {
         </div>
 
         {/* ── Sub-reports ───────────────────────────────────────────────── */}
-        <RevenueReport payments={filteredPayments} chartJsLoaded={chartJsLoaded} />
-        <MembersReport
-          newMembers={newMembers}
-          payments={filteredPayments}
-          chartJsLoaded={chartJsLoaded}
-        />
+        <RevenueReport payments={filteredPayments} />
+        <MembersReport newMembers={newMembers} payments={filteredPayments} />
         <ChurnReport members={members} fromDate={fromDate} toDate={toDate} />
     </div>
   );

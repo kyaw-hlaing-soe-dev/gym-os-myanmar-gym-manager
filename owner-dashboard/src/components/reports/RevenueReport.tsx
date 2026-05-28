@@ -1,121 +1,43 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import type { PaymentRecord } from '@/lib/types';
-
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Chart: any;
-  }
-}
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import type { PaymentRecord } from "@/lib/types";
 
 interface Props {
   payments: PaymentRecord[];
-  chartJsLoaded: boolean;
 }
 
-const PLAN_COLORS = ['#0f9b8e', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
-const METHOD_COLORS = ['#0f9b8e', '#3b82f6', '#ef4444', '#8b5cf6', '#f59e0b'];
+const PLAN_COLORS = ["#0f9b8e", "#2563eb", "#7c3aed", "#f59e0b", "#ef4444"];
+const METHOD_COLORS = ["#0f9b8e", "#2563eb", "#ef4444", "#7c3aed", "#f59e0b"];
 
-function Skeleton() {
-  return <div className="h-full animate-pulse rounded-xl bg-slate-100" />;
+function formatMMK(value: number) {
+  return `${value.toLocaleString()} MMK`;
 }
 
-export default function RevenueReport({ payments, chartJsLoaded }: Props) {
-  const planRef = useRef<HTMLCanvasElement>(null);
-  const methodRef = useRef<HTMLCanvasElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const planChart = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const methodChart = useRef<any>(null);
+export default function RevenueReport({ payments }: Props) {
+  const byPlan = payments.reduce<Record<string, number>>((totals, payment) => {
+    totals[payment.plan] = (totals[payment.plan] ?? 0) + payment.amount;
+    return totals;
+  }, {});
 
-  // Group by plan
-  const byPlan: Record<string, number> = {};
-  payments.forEach((p) => { byPlan[p.plan] = (byPlan[p.plan] ?? 0) + p.amount; });
+  const byMethod = payments.reduce<Record<string, number>>((totals, payment) => {
+    totals[payment.method] = (totals[payment.method] ?? 0) + payment.amount;
+    return totals;
+  }, {});
 
-  // Group by method
-  const byMethod: Record<string, number> = {};
-  payments.forEach((p) => { byMethod[p.method] = (byMethod[p.method] ?? 0) + p.amount; });
-
-  useEffect(() => {
-    if (!chartJsLoaded || !window.Chart) return;
-
-    // Plan bar chart
-    if (planRef.current) {
-      planChart.current?.destroy();
-      const labels = Object.keys(byPlan);
-      const data = labels.map((k) => byPlan[k]);
-      planChart.current = new window.Chart(planRef.current, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Revenue (MMK)',
-              data,
-              backgroundColor: labels.map((_, i) => PLAN_COLORS[i % PLAN_COLORS.length]),
-              borderRadius: 8,
-              borderSkipped: false,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              grid: { color: '#f1f5f9' },
-              ticks: { callback: (v: number) => `${(v / 1000).toFixed(0)}K`, color: '#64748b', font: { size: 11 } },
-            },
-            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
-          },
-        },
-      });
-    }
-
-    // Payment method doughnut
-    if (methodRef.current) {
-      methodChart.current?.destroy();
-      const labels = Object.keys(byMethod);
-      const data = labels.map((k) => byMethod[k]);
-      methodChart.current = new window.Chart(methodRef.current, {
-        type: 'doughnut',
-        data: {
-          labels,
-          datasets: [
-            {
-              data,
-              backgroundColor: labels.map((_, i) => METHOD_COLORS[i % METHOD_COLORS.length]),
-              borderWidth: 2,
-              borderColor: '#ffffff',
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '65%',
-          plugins: {
-            legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#64748b', padding: 12 } },
-            tooltip: {
-              callbacks: {
-                label: (ctx: { label: string; raw: number }) =>
-                  ` ${ctx.label}: ${ctx.raw.toLocaleString()} MMK`,
-              },
-            },
-          },
-        },
-      });
-    }
-
-    return () => {
-      planChart.current?.destroy();
-      methodChart.current?.destroy();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartJsLoaded, JSON.stringify(byPlan), JSON.stringify(byMethod)]);
+  const planData = Object.entries(byPlan).map(([plan, amount]) => ({ plan, amount }));
+  const methodData = Object.entries(byMethod).map(([method, amount]) => ({ method, amount }));
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -128,7 +50,19 @@ export default function RevenueReport({ payments, chartJsLoaded }: Props) {
             By Plan Type
           </p>
           <div className="h-52">
-            {chartJsLoaded ? <canvas ref={planRef} /> : <Skeleton />}
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={planData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="plan" axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(value) => `${Number(value) / 1_000}K`} />
+                <Tooltip formatter={(value) => [formatMMK(Number(value)), "Revenue"]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
+                <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                  {planData.map((entry, index) => (
+                    <Cell key={entry.plan} fill={PLAN_COLORS[index % PLAN_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
         <div>
@@ -136,12 +70,35 @@ export default function RevenueReport({ payments, chartJsLoaded }: Props) {
             By Payment Method
           </p>
           <div className="h-52">
-            {chartJsLoaded ? <canvas ref={methodRef} /> : <Skeleton />}
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={methodData}
+                  dataKey="amount"
+                  nameKey="method"
+                  innerRadius={52}
+                  outerRadius={78}
+                  paddingAngle={3}
+                >
+                  {methodData.map((entry, index) => (
+                    <Cell key={entry.method} fill={METHOD_COLORS[index % METHOD_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [formatMMK(Number(value)), name]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {methodData.map((item, index) => (
+              <span key={item.method} className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                <span className="h-2 w-2 rounded-full" style={{ background: METHOD_COLORS[index % METHOD_COLORS.length] }} />
+                {item.method}
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Tabular summary */}
       <div className="mt-5 grid gap-4 border-t border-slate-100 pt-4 md:grid-cols-2">
         <div>
           <p className="mb-2 text-xs font-semibold text-slate-400">Plan Totals</p>
@@ -150,9 +107,7 @@ export default function RevenueReport({ payments, chartJsLoaded }: Props) {
             .map(([plan, amount]) => (
               <div key={plan} className="flex justify-between py-1 text-sm">
                 <span className="text-slate-700">{plan}</span>
-                <span className="font-semibold text-slate-900">
-                  {amount.toLocaleString()} MMK
-                </span>
+                <span className="font-semibold text-slate-900">{formatMMK(amount)}</span>
               </div>
             ))}
         </div>
@@ -163,9 +118,7 @@ export default function RevenueReport({ payments, chartJsLoaded }: Props) {
             .map(([method, amount]) => (
               <div key={method} className="flex justify-between py-1 text-sm">
                 <span className="text-slate-700">{method}</span>
-                <span className="font-semibold text-slate-900">
-                  {amount.toLocaleString()} MMK
-                </span>
+                <span className="font-semibold text-slate-900">{formatMMK(amount)}</span>
               </div>
             ))}
         </div>
